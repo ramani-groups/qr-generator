@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0871b9">
+  <title>Opening QR · Ramani QR Studio</title>
+  <link rel="icon" href="assets/images/ramani-favicon.png" type="image/png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="container action-main">
+    <section class="glass-panel action-card">
+      <img class="action-logo" src="assets/images/ramani-logo.png" alt="Ramani">
+      <p class="kicker">RAMANI GROUPS · INTERNAL QR</p>
+      <h1 id="actionTitle">Opening QR…</h1>
+      <p id="status">Recording this scan.</p>
+      <div id="actionContent"></div>
+    </section>
+  </main>
+  <script src="js/config.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const cfg=window.RAMANI_QR_CONFIG||{};
+    const params=new URLSearchParams(location.search);
+    const name=params.get('n')||'', type=params.get('t')||'', token=params.get('k')||'', encoded=params.get('d')||'';
+    const status=document.getElementById('status'), title=document.getElementById('actionTitle'), content=document.getElementById('actionContent');
+
+    function decodeBase64Url(value){
+      try { const base=value.replace(/-/g,'+').replace(/_/g,'/'); const pad='='.repeat((4-base.length%4)%4); const bin=atob(base+pad); const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0)); return new TextDecoder().decode(bytes); }
+      catch(_){ return ''; }
+    }
+    function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function jsonp(p){return new Promise((resolve,reject)=>{if(!cfg.appsScriptUrl)return reject(new Error('not configured')); const cb=`ramaniScan_${Date.now()}_${Math.random().toString(36).slice(2)}`, s=document.createElement('script'); let done=false; const finish=(err,data)=>{if(done)return;done=true;delete window[cb];s.remove();err?reject(err):resolve(data)}; window[cb]=d=>finish(null,d); const u=new URL(cfg.appsScriptUrl); Object.entries({...p,callback:cb}).forEach(([k,v])=>u.searchParams.set(k,v)); s.src=u; s.onerror=()=>finish(new Error('tracking failed')); document.head.appendChild(s); setTimeout(()=>finish(new Error('tracking timeout')),1200);});}
+    function parseWifi(value){
+      const out={}; const body=value.replace(/^WIFI:/,'').replace(/;;$/,''); let current='', parts=[], esc=false;
+      for(const ch of body){ if(esc){current+=ch;esc=false;} else if(ch==='\\'){esc=true;} else if(ch===';'){parts.push(current);current='';} else current+=ch; }
+      if(current)parts.push(current); parts.forEach(part=>{const i=part.indexOf(':');if(i>0)out[part.slice(0,i)]=part.slice(i+1);}); return out;
+    }
+    function clientInfo(){
+      const ua=navigator.userAgent||'';
+      let browser='Other';
+      if(/Edg\//.test(ua)) browser='Microsoft Edge';
+      else if(/OPR\//.test(ua)) browser='Opera';
+      else if(/CriOS\//.test(ua)) browser='Chrome iOS';
+      else if(/Chrome\//.test(ua)) browser='Google Chrome';
+      else if(/FxiOS\//.test(ua)) browser='Firefox iOS';
+      else if(/Firefox\//.test(ua)) browser='Mozilla Firefox';
+      else if(/Safari\//.test(ua)) browser='Safari';
+      let os='Other';
+      if(/Windows NT/.test(ua)) os='Windows';
+      else if(/Android/.test(ua)) os='Android';
+      else if(/iPhone|iPad|iPod/.test(ua)) os='iOS/iPadOS';
+      else if(/Mac OS X/.test(ua)) os='macOS';
+      else if(/Linux/.test(ua)) os='Linux';
+      let device='Desktop';
+      if(/iPad|Tablet|PlayBook|Silk/i.test(ua)) device='Tablet';
+      else if(/Mobi|Android|iPhone|iPod/i.test(ua)) device='Mobile';
+      return {device,browser,os,userAgent:ua,referrer:document.referrer||''};
+    }
+    async function networkInfo(){
+      const out={ip:'',country:'',region:'',city:'',latitude:'',longitude:''};
+      try{
+        const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),650);
+        const r=await fetch('https://ipwho.is/',{signal:controller.signal,cache:'no-store'}); clearTimeout(timer);
+        if(r.ok){const d=await r.json();if(d&&d.success!==false){out.ip=d.ip||'';out.country=d.country||'';out.region=d.region||'';out.city=d.city||'';out.latitude=d.latitude??'';out.longitude=d.longitude??'';}}
+      }catch(_){ }
+      try{
+        if(navigator.permissions&&navigator.geolocation){
+          const permission=await navigator.permissions.query({name:'geolocation'});
+          if(permission.state==='granted'){
+            const pos=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:false,timeout:500,maximumAge:300000}));
+            out.latitude=pos.coords.latitude;out.longitude=pos.coords.longitude;
+          }
+        }
+      }catch(_){ }
+      return out;
+    }
+    function perform(payload){
+      status.textContent='Scan recorded for '+name+'.';
+      if(type==='url'){ title.textContent='Opening website…'; location.replace(payload); return; }
+      if(type==='email'){ title.textContent='Opening email…'; location.href=payload; content.innerHTML='<p class="action-fallback">If your mail app does not open, use the email action from your browser.</p>'; return; }
+      if(type==='phone'){ title.textContent='Opening phone…'; location.href=payload; content.innerHTML='<p class="action-fallback">If the dialer does not open, tap the button below.</p><a class="primary-button action-button" href="'+escapeHtml(payload)+'">Open dialer</a>'; return; }
+      if(type==='sms'){ title.textContent='Opening message…'; location.href=payload; content.innerHTML='<p class="action-fallback">If Messages does not open, tap below.</p><a class="primary-button action-button" href="'+escapeHtml(payload)+'">Open Messages</a>'; return; }
+      if(type==='text'){ title.textContent=name; status.textContent='Tracked text QR'; content.innerHTML='<div class="payload-display"><pre>'+escapeHtml(payload)+'</pre><button id="copyPayload" class="secondary-button action-button" type="button">Copy text</button></div>'; document.getElementById('copyPayload').onclick=()=>navigator.clipboard?.writeText(payload); return; }
+      if(type==='wifi'){
+        title.textContent='Wi-Fi details'; status.textContent='Scan recorded. Tracked Wi-Fi QR codes show connection details because browsers cannot automatically join Wi-Fi after a tracked web redirect.';
+        const w=parseWifi(payload), security=w.T==='nopass'?'None':(w.T||'—');
+        content.innerHTML='<div class="wifi-details"><div><span>Network</span><strong>'+escapeHtml(w.S||'—')+'</strong></div><div><span>Password</span><strong>'+escapeHtml(w.P||'(none)')+'</strong></div><div><span>Security</span><strong>'+escapeHtml(security)+'</strong></div><button id="copyWifi" class="primary-button action-button" type="button">Copy password</button></div>';
+        document.getElementById('copyWifi').onclick=()=>navigator.clipboard?.writeText(w.P||''); return;
+      }
+      title.textContent='Invalid QR'; status.textContent='This QR type is not supported.';
+    }
+
+    const payload=decodeBase64Url(encoded);
+    if(!name||!type||!token||!payload){title.textContent='Invalid QR';status.textContent='This tracked QR is incomplete.';return;}
+    (async()=>{
+      const meta={...clientInfo(),...(await networkInfo())};
+      await Promise.race([jsonp({action:'scan',name,token,...meta}),new Promise(r=>setTimeout(r,1200))]).catch(()=>{});
+      perform(payload);
+    })();
+  })();
+  </script>
+</body>
+</html>
