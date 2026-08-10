@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ramani QR Studio — Internal QR Generator</title>
+  <meta name="description" content="Internal Ramani Groups QR code generator with scan tracking.">
+  <meta name="theme-color" content="#0876bd">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="site-header">
+  <a class="brand" href="index.html" aria-label="Ramani QR Studio home"><img src="assets/ramani-logo.png" alt="Ramani"><span>QR Studio</span></a>
+  <nav><a class="active" href="index.html">Generator</a><a href="analytics.html">Analytics</a></nav>
+  <span class="internal-pill">Internal use only</span>
+</header>
+
+<main class="page-shell">
+  <section class="hero">
+    <p class="eyebrow">RAMANI GROUPS · INTERNAL TOOL</p>
+    <h1>Create and track QR codes</h1>
+    <p>Generate tracked QR codes for URL, text, email, phone, SMS and Wi‑Fi. Scan activity is available in Analytics.</p>
+  </section>
+
+  <section class="workspace">
+    <div class="builder panel">
+      <div class="section-head"><div><p class="eyebrow">QR GENERATOR</p><h2>Build your code</h2></div><button id="resetBtn" class="ghost-btn" type="button">↻ Reset</button></div>
+
+      <div class="name-card">
+        <label for="qrName">QR Name <span>Required · must be unique</span></label>
+        <input id="qrName" type="text" maxlength="80" placeholder="e.g. Chennai Careers Aug 2026" autocomplete="off">
+        <div id="nameStatus" class="status-text">Enter a unique QR Name.</div>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="QR content type">
+        <button class="tab active" data-type="url" type="button">URL</button>
+        <button class="tab" data-type="text" type="button">Text</button>
+        <button class="tab" data-type="email" type="button">Email</button>
+        <button class="tab" data-type="phone" type="button">Phone</button>
+        <button class="tab" data-type="sms" type="button">SMS</button>
+        <button class="tab" data-type="wifi" type="button">Wi‑Fi</button>
+      </div>
+
+      <div id="fields"></div>
+
+      <details class="customize">
+        <summary>QR appearance</summary>
+        <div class="settings-grid">
+          <label>Foreground<input id="fgColor" type="color" value="#111827"></label>
+          <label>Background<input id="bgColor" type="color" value="#ffffff"></label>
+          <label>Size<select id="qrSize"><option value="256">256 × 256</option><option value="512" selected>512 × 512</option><option value="1024">1024 × 1024</option></select></label>
+          <label>Error correction<select id="errorLevel"><option value="L">Low</option><option value="M" selected>Medium</option><option value="Q">Quartile</option><option value="H">High</option></select></label>
+          <label>Margin<input id="margin" type="range" min="4" max="12" value="6"><span id="marginValue">6 modules</span></label>
+        </div>
+      </details>
+
+      <div id="formError" class="inline-error" hidden></div>
+      <button id="createBtn" class="primary-btn" type="button">Create tracked QR</button>
+      <p class="privacy-note"><strong>Private internal tool.</strong> QR definitions and scan timestamps are stored in the Ramani QR Studio Google Sheet through the configured Apps Script.</p>
+    </div>
+
+    <aside class="preview panel">
+      <div class="section-head"><div><p class="eyebrow">LIVE PREVIEW</p><h2>Your QR code</h2></div><span id="previewStatus" class="preview-badge">Waiting</span></div>
+      <div id="qrFrame" class="qr-frame"><div class="qr-placeholder">Complete the fields and create the tracked QR.</div></div>
+      <div id="createdInfo" class="created-info" hidden></div>
+      <div class="download-row">
+        <button id="pngBtn" class="secondary-btn" type="button" disabled>Download PNG</button>
+        <button id="svgBtn" class="secondary-btn" type="button" disabled>Download SVG</button>
+      </div>
+    </aside>
+  </section>
+</main>
+<footer>Ramani Groups · Internal use only</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
