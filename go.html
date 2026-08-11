@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0871b9">
+  <title>Opening QR · Ramani QR Studio</title>
+  <link rel="icon" href="assets/images/ramani-favicon.png" type="image/png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="container action-main">
+    <section class="glass-panel action-card">
+      <img class="action-logo" src="assets/images/ramani-logo.png" alt="Ramani">
+      <p class="kicker">RAMANI GROUPS · INTERNAL QR</p>
+      <h1 id="actionTitle">Opening QR…</h1>
+      <p id="status">Recording this scan.</p>
+      <div id="actionContent"></div>
+    </section>
+  </main>
+  <script src="js/config.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const cfg=window.RAMANI_QR_CONFIG||{};
+    const params=new URLSearchParams(location.search);
+    const name=params.get('n')||'', type=params.get('t')||'', token=params.get('k')||'', encoded=params.get('d')||'', tracked=params.get('tracked');
+    const status=document.getElementById('status'), title=document.getElementById('actionTitle'), content=document.getElementById('actionContent');
+
+    function decodeBase64Url(value){
+      try { const base=value.replace(/-/g,'+').replace(/_/g,'/'); const pad='='.repeat((4-base.length%4)%4); const bin=atob(base+pad); const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0)); return new TextDecoder().decode(bytes); }
+      catch(_){ return ''; }
+    }
+    function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function parseWifi(value){
+      const out={}; const body=value.replace(/^WIFI:/,'').replace(/;;$/,''); let current='', parts=[], esc=false;
+      for(const ch of body){ if(esc){current+=ch;esc=false;} else if(ch==='\\'){esc=true;} else if(ch===';'){parts.push(current);current='';} else current+=ch; }
+      if(current)parts.push(current); parts.forEach(part=>{const i=part.indexOf(':');if(i>0)out[part.slice(0,i)]=part.slice(i+1);}); return out;
+    }
+    function perform(payload){
+      if(type==='url'){ title.textContent='Opening website…'; location.replace(payload); return; }
+      if(type==='email'){ title.textContent='Opening email…'; location.href=payload; content.innerHTML='<p class="action-fallback">If your mail app does not open, use the email action from your browser.</p>'; return; }
+      if(type==='phone'){ title.textContent='Opening phone…'; location.href=payload; content.innerHTML='<p class="action-fallback">If the dialer does not open, tap the button below.</p><a class="primary-button action-button" href="'+escapeHtml(payload)+'">Open dialer</a>'; return; }
+      if(type==='sms'){ title.textContent='Opening message…'; location.href=payload; content.innerHTML='<p class="action-fallback">If Messages does not open, tap below.</p><a class="primary-button action-button" href="'+escapeHtml(payload)+'">Open Messages</a>'; return; }
+      if(type==='text'){ title.textContent=name; status.textContent=tracked==='1'?'Scan recorded. Tracked text QR':'Tracked text QR'; content.innerHTML='<div class="payload-display"><pre>'+escapeHtml(payload)+'</pre><button id="copyPayload" class="secondary-button action-button" type="button">Copy text</button></div>'; document.getElementById('copyPayload').onclick=()=>navigator.clipboard?.writeText(payload); return; }
+      if(type==='wifi'){
+        title.textContent='Wi-Fi details'; status.textContent=(tracked==='1'?'Scan recorded. ':'')+'Tracked Wi-Fi QR codes show connection details because browsers cannot automatically join Wi-Fi after a tracked web redirect.';
+        const w=parseWifi(payload), security=w.T==='nopass'?'None':(w.T||'—');
+        content.innerHTML='<div class="wifi-details"><div><span>Network</span><strong>'+escapeHtml(w.S||'—')+'</strong></div><div><span>Password</span><strong>'+escapeHtml(w.P||'(none)')+'</strong></div><div><span>Security</span><strong>'+escapeHtml(security)+'</strong></div><button id="copyWifi" class="primary-button action-button" type="button">Copy password</button></div>';
+        document.getElementById('copyWifi').onclick=()=>navigator.clipboard?.writeText(w.P||''); return;
+      }
+      title.textContent='Invalid QR'; status.textContent='This QR type is not supported.';
+    }
+
+    const payload=decodeBase64Url(encoded);
+    if(!name||!type||!token||!payload){title.textContent='Invalid QR';status.textContent='This tracked QR is incomplete.';return;}
+    if(tracked==='1') status.textContent='Scan recorded for '+name+'.';
+    else status.textContent='Opening '+name+'. Tracking could not be verified.';
+    perform(payload);
+  })();
+  </script>
+</body>
+</html>
